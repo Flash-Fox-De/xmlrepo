@@ -1,0 +1,205 @@
+package de.flashfox._SCRIPT.interactive.example01;
+
+
+/*
+ * XML Parser. Collects Data from XML Files.
+ *
+ ***************************************
+ * Created by: Foxy (www.flash-fox.de) *
+ * Created for: TheCoasterWolf         *
+ * Tested by: Bestdani                 *
+ ***************************************
+ *
+ * This XML-Parser will return values from a valid XML file.
+ * The advantage is, that you have now not only one string avalable (like: SCO-Name), but unlimited amounts of commands
+ * that can be processed later on.
+ * You can control lots of different SCOs with one single script or create a sequence of multiple scripts, that get executed at a given time.
+ *
+ * This script is dedicated to TheCoasterWolf.
+ * He said to me, that scripting is not really his world, but he knows how to use XML
+ *
+ * And this was the birth of the XML-Parser.
+ * There will be a lot of other "plugins" following, that make use of this parser. 
+ *
+ * May the force of scripting be with you.
+*/
+ 
+ /**************
+  * TO-DO List *
+  **************
+  * +Attribute >> find and process attributes in XML-Files
+ */
+ 
+import com.nolimitscoaster.*;
+
+/* IMPORTANT: Custom Import!
+ *
+ * You need a custom import in order to make
+ * it work.
+ * The custom class is located here:
+ * [YOUR-Nolimits2-Park-folder] \Objects\de\flashfox\_SCRIPT\System\xml\xmlParser.nlvm
+*/ 
+import de.flashfox._SCRIPT.System.xml.*;
+
+/*
+ * nlvm.util.*; is needed for the vectors (which are used as some sort of "zip-file" or a container for transport.)
+ * nlvm.math3d.*; is needed for the character range and the sco-element matrix.
+*/
+import nlvm.util.*; 
+import nlvm.math3d.*;
+
+/* Load XML File.
+	 *
+	 * IMPORTANT: Attach the XML file to the Ressource ID of an NL2Script.
+	 *			  Otherwise its not possible to upload your park to the workshop!
+	 * 
+	 * The method here is just the normal loadTextFileFromResourceId(); method of NL2. But you cant just use them as XML, yet.
+	 *
+	 ********************************************************************************************************
+	 * String unformatted_xml_file = com.nolimitscoaster.Tools.loadTextFileFromResourceId("example01-xml");*
+	 ********************************************************************************************************
+	 * 
+	 * get the XML data.
+	 *
+	 * Now you need my XML-Parser to break down the XML-String.
+	 * The Parser will store all XML-Tags and values in a nested object.
+	 * 
+	 * The return will be an "object" that is supposed to be a nested vector.
+	 * This line shows you how to convert it back to the first level vector.
+	 *
+	 *********************************************************************************************************
+	 * Vector formatted_xml = (Vector)xmlParser.getXmlValues( unformatted_xml_file );
+	 *********************************************************************************************************
+	 *
+	 *
+	 *
+	 *
+	 *
+	 +
+	*/
+	
+public class two_d_sheet extends Script{
+	
+	private static String unformatted_xml_file;
+	private static Vector formatted_xml = new Vector(0);
+	
+	private static Vector openTagVector = new Vector(0);
+	private static Vector RangeVector = new Vector(0);
+	private static Vector valueVector = new Vector(0);
+	private static Vector closeTagVector = new Vector(0);
+	
+	private static String openTag;
+	private static Vector3f range;
+	private static String value;
+	private static String closeTag;
+	
+	////////////////////////////////////
+	// This is needed for the code at the bottom. (the code, that is acutally controlling the SCO.)
+	////////////////////////////////////
+	
+	private static SceneObject sheet;
+	private static SceneObjectElement xElem;
+	private static SceneObjectElement yElem;
+	private static SceneObjectElement target;
+	
+	private static Vector3f xElem_trans;
+	private static Vector3f yElem_trans;
+	private static Vector3f target_trans;
+	
+	public static float xVal;
+	public static float yVal;
+		
+	public bool onInit(){
+	
+		//Load the XML class ( if you need more than just the parser. e.g: xml.toFloat(String s) ) 
+		///////////////
+		xmlParser xml = new xmlParser();
+		
+		//Load XML File.
+		///////////////
+		unformatted_xml_file = com.nolimitscoaster.Tools.loadTextFileFromResourceId("example01-xml");
+		
+		//get the XML Vector.
+		///////////////
+		formatted_xml = (Vector)xmlParser.getXmlValues( unformatted_xml_file);
+		
+		// get the XML data (DEBUG MODE)
+		// In case you need a console output, to see what kind of data the system has found:
+		//
+		// System.out.println( xmlParser.getXmlValues ( unformatted_xml_file , #NUM ) );
+		//
+		// Replace #NUM with a number (0-2)
+		// 0 = no debug output / 1 = minimum debug output / 2 = full debug output (slow!)
+		// Usefull to find mistakes in your XML syntax.
+		
+		//
+		//get indipendent Vectors (secound level vectors)
+		///////////////
+		
+		openTagVector 	= (Vector)formatted_xml.elementAt(0);
+		RangeVector 	= (Vector)formatted_xml.elementAt(1);
+		valueVector 	= (Vector)formatted_xml.elementAt(2);
+		closeTagVector 	= (Vector)formatted_xml.elementAt(3);
+		
+		//
+		//get values of XML Vector (They are all 'Strings'... no auto convert, yet) (except for: charRangeVector)
+		///////////////
+		
+		openTag 	= (String)openTagVector.elementAt(0);
+		range 		= (Vector3f)RangeVector.elementAt(0);
+		value 		= (String)valueVector.elementAt(1);
+		closeTag 	= (String)closeTagVector.elementAt(0);
+		
+		
+		//
+		// Here is the prove of concept. Its working as intended.
+		// Now, as a coder, its up to you, to use the data in the right place.
+		///////////////
+		
+		System.out.println("\n\n##################################");
+		System.err.println("XML Example01: Output");
+		System.out.println("##################################");
+		
+		System.out.println(openTag);
+		System.out.println(range);
+		System.out.println(value);
+		System.out.println(closeTag);
+		
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// Code for the two_d_sheet  (i will start all over, and overwrite all variables)
+		// Everything above this, is supposed to be a tutorial and not part of the actual code.
+		//
+		// You can delete in YOUR code everything up to "public bool onInit(){"
+		//
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////
+		
+		sheet	= NoLimits.getSimulator().getSceneObjectForEntityId(getParentEntityId());
+		xElem	= sheet.getElementForName("example01_x");
+		yElem	= sheet.getElementForName("example01_y");
+		target	= sheet.getElementForName("example01_targetXY");
+		
+		xElem_trans = xElem.getMatrix().getTrans(); //(z,y,x) -> accourding to exported model axis.
+		
+		Vector3f test = new Vector3f(0.0f, 0.5f, 0.0f);
+		xElem.setTranslation(test);
+		
+		unformatted_xml_file = com.nolimitscoaster.Tools.loadTextFileFromResourceId("example01-xml");
+		formatted_xml = (Vector)xmlParser.getXmlValues( unformatted_xml_file );
+		valueVector = (Vector)formatted_xml.elementAt(2);
+		
+		//
+		// xml.toFloat(String s)
+		//
+		// This method comes with the XML-Parser and can be used, to convert Strings to floating-point numbers.
+		////////////////////////////////////////////////////////////////////////////////////////
+		
+		xVal = xml.toFloat( (String)valueVector.elementAt(0) ); //Temporary Method to convert a String to Float
+		yVal = xml.toFloat( (String)valueVector.elementAt(1) ); //Temporary Method to convert a String to Float
+		
+		xElem.setTranslation(0.0f , 0.0f , xVal);
+		yElem.setTranslation(0.0f , yVal , 0.0f);
+		target.setTranslation(0.0f , yVal , xVal);
+		return true;
+	}	
+}

@@ -1,0 +1,294 @@
+package de.flashfox._SCRIPT.interactive.example02;
+
+
+/*
+ * XML Parser. Collects Data from XML Files.
+ *
+ ***************************************
+ * Created by: Foxy (www.flash-fox.de) *
+ * Created for: TheCoasterWolf         *
+ * Tested by: Bestdani                 *
+ ***************************************
+ *
+ * This XML-Parser will return values from a valid XML file.
+ * The advantage is, that you have now not only one string avalable (like: SCO-Name), but unlimited amounts of commands
+ * that can be processed later on.
+ * You can control lots of different SCOs with one single script or create a sequence of multiple scripts, that get executed at a given time.
+ *
+ * This script is dedicated to TheCoasterWolf.
+ * He said to me, that scripting is not really his world, but he knows how to use XML
+ *
+ * And this was the birth of the XML-Parser.
+ * There will be a lot of other "plugins" following, that make use of this parser. 
+ *
+ * May the force of scripting be with you.
+ *
+ **********************************************************************
+ ***************************** Example 02 *****************************
+ **********************************************************************
+ * 
+ * This Example seems to be complex, but it isnt.
+ * If i had used loops, it would be very compact.
+ * 
+ * The first step was to assign all Scene Object Elements to a designated variable.
+ * after that, it 
+ * 
+*/
+ 
+ /**************
+  * TO-DO List *
+  **************
+  * +Attribute >> find and process attributes in XML-Files
+ */
+ 
+import com.nolimitscoaster.*;
+//import nlvm.math3d.*;
+//import nlvm.util.*;
+//import nlvm.lang.*;
+
+/* IMPORTANT: Custom Import!
+ *
+ * You need a custom import in order to make
+ * it work.
+ * The custom class is located here:
+ * [YOUR-Nolimits2-Park-folder] \Objects\de\flashfox\_SCRIPT\System\xml\xmlParser.nlvm
+*/ 
+import de.flashfox._SCRIPT.System.xml.*;
+
+/*
+ * nlvm.util.*; is needed for the vectors (which are used as some sort of "zip-file" or a container for transport.)
+ * nlvm.math3d.*; is needed for the character range and the sco-element matrix.
+*/
+import nlvm.util.*; 
+import nlvm.math3d.*;
+	
+public class universalSeat extends Script{
+	
+	xmlParser xml = new xmlParser();
+	
+	private static String unformatted_xml_file;
+	private static Vector formatted_xml = new Vector(0);
+	public static Vector valueVector = new Vector(0);
+	////////////////////////////////////
+	// This is needed for the code at the bottom. (the code, that is acutally controlling the SCO.)
+	////////////////////////////////////
+	
+	private static SceneObject ride;
+	public static SceneObjectElement[] SEAT_HEAD_parts = new SceneObjectElement[16];
+	public static SceneObjectElement[] RESTR_TOP_V1_parts = new SceneObjectElement[8];
+		
+	private static Vector3f ExternalRide_Position = new Vector3f();
+	
+	public static float xVal;
+	public static float yVal;
+	
+	public static ExternalRideView erv_seat1;
+	public static ExternalRideView erv_seat2;
+	public static ExternalRideView erv_seat3;
+	public static ExternalRideView erv_seat4;
+	public static Vector3f[] ervPos = new Vector3f[4];
+	public static Matrix4x4f ervMatr = new Matrix4x4f();
+	
+	public bool onInit(){
+		
+		ride	= NoLimits.getSimulator().getSceneObjectForEntityId(getParentEntityId());
+				
+		//
+		// All elements that get disabled, when: <SEAT_HEAD> FALSE </SEAT_HEAD>
+		/////////////////////////////////////////////////////////////////////////////
+		
+		//car 01
+		SEAT_HEAD_parts[0] = ride.getElementAt(3);
+		SEAT_HEAD_parts[1] = ride.getElementAt(5);
+		SEAT_HEAD_parts[2] = ride.getElementAt(8);
+		SEAT_HEAD_parts[3] = ride.getElementAt(9);
+		//car 02
+		SEAT_HEAD_parts[4] = ride.getElementAt(15);
+		SEAT_HEAD_parts[5] = ride.getElementAt(17);
+		SEAT_HEAD_parts[6] = ride.getElementAt(20);
+		SEAT_HEAD_parts[7] = ride.getElementAt(21);
+		//car 03
+		SEAT_HEAD_parts[8] = ride.getElementAt(28);
+		SEAT_HEAD_parts[9] = ride.getElementAt(30);
+		SEAT_HEAD_parts[10] = ride.getElementAt(33);
+		SEAT_HEAD_parts[11] = ride.getElementAt(34);
+		//car 04
+		SEAT_HEAD_parts[12] = ride.getElementAt(40);
+		SEAT_HEAD_parts[13] = ride.getElementAt(42);
+		SEAT_HEAD_parts[14] = ride.getElementAt(45);
+		SEAT_HEAD_parts[15] = ride.getElementAt(46);
+		
+		//
+		// All elements that get disabled, when: <RESTR_TOP_V1> FALSE </RESTR_TOP_V1>
+		/////////////////////////////////////////////////////////////////////////////
+		//car 01
+		RESTR_TOP_V1_parts[0] = ride.getElementAt(10);
+		RESTR_TOP_V1_parts[1] = ride.getElementAt(11);
+		//car 02
+		RESTR_TOP_V1_parts[2] = ride.getElementAt(22);
+		RESTR_TOP_V1_parts[3] = ride.getElementAt(23);
+		//car 03
+		RESTR_TOP_V1_parts[4] = ride.getElementAt(35);
+		RESTR_TOP_V1_parts[5] = ride.getElementAt(36);
+		//car 04
+		RESTR_TOP_V1_parts[6] = ride.getElementAt(47);
+		RESTR_TOP_V1_parts[7] = ride.getElementAt(48);
+		
+		unformatted_xml_file = com.nolimitscoaster.Tools.loadTextFileFromResourceId("example01-xml");
+		formatted_xml = (Vector)xmlParser.getXmlValues( unformatted_xml_file );
+		valueVector = (Vector)formatted_xml.elementAt(2);
+		
+		//
+		// Check all Elements and hide them, if the XML said so.
+		//////////////
+		if( ((String)valueVector.elementAt(3)).equals("FALSE") || ((String)valueVector.elementAt(3)).equals("false") ){
+			//Looking for the 3 entity/value of the XML-file and check if its "False"
+			SEAT_HEAD_parts[0].setVisible(false);
+			SEAT_HEAD_parts[1].setVisible(false);
+			SEAT_HEAD_parts[2].setVisible(false);
+			SEAT_HEAD_parts[3].setVisible(false);
+						
+		}
+		if( ((String)valueVector.elementAt(8)).equals("FALSE") || ((String)valueVector.elementAt(8)).equals("false") ){
+			//Looking for the 8 entity/value of the XML-file and check if its "False"
+			SEAT_HEAD_parts[4].setVisible(false);
+			SEAT_HEAD_parts[5].setVisible(false);
+			SEAT_HEAD_parts[6].setVisible(false);
+			SEAT_HEAD_parts[7].setVisible(false);
+						
+		}
+		if( ((String)valueVector.elementAt(13)).equals("FALSE") || ((String)valueVector.elementAt(13)).equals("false") ){
+			//Looking for the 13 entity/value of the XML-file and check if its "False"
+			SEAT_HEAD_parts[8].setVisible(false);
+			SEAT_HEAD_parts[9].setVisible(false);
+			SEAT_HEAD_parts[10].setVisible(false);
+			SEAT_HEAD_parts[11].setVisible(false);
+						
+		}
+		if( ((String)valueVector.elementAt(18)).equals("FALSE") || ((String)valueVector.elementAt(18)).equals("false") ){
+			//Looking for the 18 entity/value of the XML-file and check if its "False"
+			SEAT_HEAD_parts[12].setVisible(false);
+			SEAT_HEAD_parts[13].setVisible(false);
+			SEAT_HEAD_parts[14].setVisible(false);
+			SEAT_HEAD_parts[15].setVisible(false);
+			
+		}
+		
+		if( ((String)valueVector.elementAt(4)).equals("FALSE") || ((String)valueVector.elementAt(4)).equals("false") ){
+			//Looking for the 4 entity/value of the XML-file and check if its "False"
+			RESTR_TOP_V1_parts[0].setVisible(false);
+			RESTR_TOP_V1_parts[1].setVisible(false);
+			
+		}
+		if( ((String)valueVector.elementAt(9)).equals("FALSE") || ((String)valueVector.elementAt(9)).equals("false") ){
+			//Looking for the 9 entity/value of the XML-file and check if its "False"
+			RESTR_TOP_V1_parts[2].setVisible(false);
+			RESTR_TOP_V1_parts[3].setVisible(false);
+			
+		}
+		if( ((String)valueVector.elementAt(14)).equals("FALSE") || ((String)valueVector.elementAt(14)).equals("false") ){
+			//Looking for the 14 entity/value of the XML-file and check if its "False"
+			RESTR_TOP_V1_parts[4].setVisible(false);
+			RESTR_TOP_V1_parts[5].setVisible(false);
+			
+		}
+		if( ((String)valueVector.elementAt(19)).equals("FALSE") || ((String)valueVector.elementAt(19)).equals("false") ){
+			//Looking for the 19 entity/value of the XML-file and check if its "False"
+			RESTR_TOP_V1_parts[6].setVisible(false);
+			RESTR_TOP_V1_parts[7].setVisible(false);
+			
+		}
+		
+		
+		//
+		// Get the XML-Coords for the External Ride Cam
+		/////////////////////////////////////////////////////////////////////////////
+		
+		System.out.println("\n\n##################################");
+		System.err.println("XML Example02: Output");
+		System.out.println("##################################");
+		
+		// create a temporary matrix 
+		Matrix4x4f tmp = new Matrix4x4f();
+		
+		///////////////////
+		// Seat 1: External Ride View
+		//////
+		
+		
+		erv_seat1 = NoLimits.getSimulator().createExternalRideView();
+		ExternalRide_Position.x = xml.toFloat((String)valueVector.elementAt(0));
+		ExternalRide_Position.y = xml.toFloat((String)valueVector.elementAt(1));
+		ExternalRide_Position.z = xml.toFloat((String)valueVector.elementAt(2));
+		tmp = ride.getMatrix();
+
+		erv_seat1.setLabel("Seat 01");
+		ervMatr.initTrans(ExternalRide_Position);
+		ervMatr.multRight(tmp);
+		erv_seat1.setCameraMatrix(ervMatr);
+		
+		ExternalRide_Position.add(tmp.getTrans());
+		erv_seat1.setEnterWarpPoint(ExternalRide_Position, 1.0f);
+		
+		System.out.println("External Ride View Position: "+ExternalRide_Position);
+		
+		///////////////////
+		// Seat 2: External Ride View
+		//////
+		erv_seat2 = NoLimits.getSimulator().createExternalRideView();
+		ExternalRide_Position.x = xml.toFloat((String)valueVector.elementAt(5));
+		ExternalRide_Position.y = xml.toFloat((String)valueVector.elementAt(6));
+		ExternalRide_Position.z = xml.toFloat((String)valueVector.elementAt(7));
+		tmp = ride.getMatrix();
+
+		erv_seat2.setLabel("Seat 02");
+		ervMatr.initTrans(ExternalRide_Position);
+		ervMatr.multRight(tmp);
+		erv_seat2.setCameraMatrix(ervMatr);
+		
+		ExternalRide_Position.add(tmp.getTrans());
+		erv_seat2.setEnterWarpPoint(ExternalRide_Position, 1.0f);
+		
+		System.out.println("External Ride View Position: "+ExternalRide_Position);
+		
+		///////////////////
+		// Seat 3: External Ride View
+		//////
+		erv_seat3 = NoLimits.getSimulator().createExternalRideView();
+		ExternalRide_Position.x = xml.toFloat((String)valueVector.elementAt(10));
+		ExternalRide_Position.y = xml.toFloat((String)valueVector.elementAt(11));
+		ExternalRide_Position.z = xml.toFloat((String)valueVector.elementAt(12));
+		tmp = ride.getMatrix();
+
+		erv_seat3.setLabel("Seat 03");
+		ervMatr.initTrans(ExternalRide_Position);
+		ervMatr.multRight(tmp);
+		erv_seat3.setCameraMatrix(ervMatr);
+		
+		ExternalRide_Position.add(tmp.getTrans());
+		erv_seat3.setEnterWarpPoint(ExternalRide_Position, 1.0f);
+		
+		System.out.println("External Ride View Position: "+ExternalRide_Position);
+		
+		///////////////////
+		// Seat 4: External Ride View
+		//////
+		erv_seat4 = NoLimits.getSimulator().createExternalRideView();
+		ExternalRide_Position.x = xml.toFloat((String)valueVector.elementAt(15));
+		ExternalRide_Position.y = xml.toFloat((String)valueVector.elementAt(16));
+		ExternalRide_Position.z = xml.toFloat((String)valueVector.elementAt(17));
+		tmp = ride.getMatrix();
+
+		erv_seat4.setLabel("Seat 04");
+		ervMatr.initTrans(ExternalRide_Position);
+		ervMatr.multRight(tmp);
+		erv_seat4.setCameraMatrix(ervMatr);
+		
+		ExternalRide_Position.add(tmp.getTrans());
+		erv_seat4.setEnterWarpPoint(ExternalRide_Position, 1.0f);
+		
+		System.out.println("External Ride View Position: "+ExternalRide_Position);
+		
+		return true;
+	}
+}

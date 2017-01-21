@@ -1,0 +1,309 @@
+package de.flashfox._SCRIPT.System.xml;
+
+
+/*
+ * XML Parser. Collects Data from XML Files.
+ *
+ ***************************************
+ * Created by: Foxy (www.flash-fox.de) *
+ * Created for: TheCoasterWolf         *
+ * Tested by: Bestdani                 *
+ ***************************************
+ *
+ * This XML-Parser will return values from a valid XML file.
+ * The advantage is, that you have now not only one string avalable (like: SCO-Name), but unlimited amounts of commands
+ * that can be processed later on.
+ * You can control lots of different SCOs with one single script or create a sequence of multiple scripts, that get executed at a given time.
+ *
+ * This script is dedicated to TheCoasterWolf.
+ * He said to me, that scripting is not really his world, but he knows how to use XML
+ *
+ * And this was the birth of the XML-Parser.
+ * There will be a lot of other "plugins" following, that make use of this parser. 
+ *
+ * May the force of scripting be with you.
+*/
+ 
+ /**************
+  * TO-DO List *
+  **************
+  * +Attribute >> find and process attributes in XML-Files
+  * +Numbers >> auto convert to INT, FLOAT, DOUBLE
+ */
+ 
+import com.nolimitscoaster.*;
+import nlvm.math3d.*;
+import nlvm.util.*;
+import nlvm.lang.*;
+
+public class xmlParser extends Script{
+	private static final String br = " \n\t\t\t\t\t ";
+	
+	
+	public static Vector getXmlValues(String xmlStr, int debugLevel){ //String returnData bool debug
+		bool debug = false;
+		switch(debugLevel){
+			case 1: debug = false;break;
+			case 2: debug = true;break;
+			default: debug = false;debugLevel=0;break;
+		}
+		
+		if(debugLevel>=1){System.err.println("public static Vector getXmlValues(Vector tags, String xmlStr)");};
+		
+		Vector xmlTagOpen = new Vector(0);			// XML open Tag  ( <xml>  )
+		Vector xmlTagClose = new Vector(0);			// XML close Tag ( </xml> )
+		Vector xmlComPosVec = new Vector(0);		// char-count for commands between tags ( <xml>HelloWorld</xml> ) -> vector3f(x:6 y:0 z:15) from char[6] to char[15]
+		Vector xmlValueVec = new Vector(0);			// XML Value (inside brackets: <x>XML Value</x>)
+		
+		Vector formatted_xml = new Vector(0);		//Package for all data
+		
+		Vector3f xmlComPos = new Vector3f();
+		char[] xmlCharArray = xmlStr.toCharArray();
+		String tempTag;
+		bool stopAddingComs = false;
+		bool nestedOpenTag = false;
+		int whileMax = 400;							// Safty First! ... Not really needed, if you know how to XML. >> It will auto-break, if your XML tags are longer than this value.
+		int count = 0;
+		int countChar = 0;
+		
+		
+		
+		if(debugLevel>=1){System.out.println("@getXmlValues >> xmlCharArray.length: "+xmlCharArray.length);};
+		
+		//
+		// Find all XML-Tags and store them in a Vector.
+		// One Vector for Opened and one for Closed Tags.
+		//////
+		for(int i = 0;i<xmlCharArray.length;i++){
+			if(xmlCharArray[i]=='<' && xmlCharArray[i+1]!='/' && xmlCharArray[i+1]!='?'){
+				stopAddingComs = false;
+				if(debugLevel>=2){System.out.println("@getXmlValues >> xmlCharArray["+i+"] (Found): "+xmlCharArray[i]);};
+				countChar = i;
+				StringBuilder sb = new StringBuilder();
+				while(count<whileMax){
+					if(debugLevel>=2){System.out.println("@getXmlValues >> xmlCharArray["+countChar+"] (while): "+xmlCharArray[countChar]);};
+					sb.append(xmlCharArray[countChar]);
+					if(xmlCharArray[countChar]=='>'){
+						if(!stopAddingComs){
+							xmlComPos.x=countChar+1;
+						};
+						break;
+					}else{
+						countChar++;
+						count++;
+					}
+				}
+				xmlTagOpen.addElement(sb.toString());
+				if(debugLevel>=1){System.out.println("@getXmlValues >> xmlTagOpen.elementAt("+(xmlTagOpen.capacity()-1)+"): "+xmlTagOpen.elementAt((xmlTagOpen.capacity()-1)));};
+				i = countChar;
+			}else if(xmlCharArray[i]=='<' && xmlCharArray[i+1]=='/'){
+				if(debugLevel>=2){System.err.println("@getXmlValues >> xmlCharArray["+i+"] (Found): "+xmlCharArray[i]);};
+				countChar = i;
+				StringBuilder sb = new StringBuilder();
+				while(count<whileMax){
+					if(debugLevel>=2){System.err.println("@getXmlValues >> xmlCharArray["+countChar+"] (while): "+xmlCharArray[countChar]);};
+					sb.append(xmlCharArray[countChar]);
+					if(xmlCharArray[countChar]=='>'){
+						if(!stopAddingComs){
+							xmlComPos.z=countChar-(sb.toString().length());
+							xmlComPosVec.addElement(xmlComPos);
+							if(debugLevel>=1){System.err.println("@getXmlValues >> xmlComPosVec.elementAt("+(xmlComPosVec.capacity()-1)+"): "+xmlComPosVec.elementAt((xmlComPosVec.capacity()-1)));};
+							
+							StringBuilder tsb = new StringBuilder(); 
+							Vector3f tv3f = new Vector3f();
+							bool checkNumberBool = true;
+							tv3f = (Vector3f)xmlComPosVec.elementAt((xmlComPosVec.capacity()-1));
+							for(int j = (int)tv3f.x; j<=(int)tv3f.z; j++){
+								tsb.append(xmlCharArray[j]);
+							}
+							if(debugLevel>=1){System.out.println("@getXmlValues >> from: Char["+tv3f.x+"] to Char["+tv3f.z+"]: "+tsb.toString());};
+								
+							// TODO: +Attribute >> find and process attributes in XML-Files
+							// TODO: +Numbers >> auto convert to INT, FLOAT, DOUBLE
+							// HERE!
+							/////////////////////////////////////////////////////////////////
+							
+							xmlValueVec.addElement(tsb.toString());
+						};
+						break;
+					}else{
+						countChar++;
+						count++;
+					}
+				}
+				
+				xmlTagClose.addElement(sb.toString());
+				if(debugLevel>=1){System.err.println("@getXmlValues >> xmlTagClose.elementAt("+(xmlTagClose.capacity()-1)+"): "+xmlTagClose.elementAt((xmlTagClose.capacity()-1)));};
+				i = countChar;
+				stopAddingComs=true;
+			}else{
+				if(debugLevel>=2){System.out.println("@getXmlValues >> xmlCharArray["+i+"]: "+xmlCharArray[i]);};
+			}
+		}
+		
+		formatted_xml.addElement(xmlTagOpen);
+		formatted_xml.addElement(xmlComPosVec);
+		formatted_xml.addElement(xmlValueVec);
+		formatted_xml.addElement(xmlTagClose);
+		
+		//Test Data
+		if(debugLevel>=1){
+			System.err.println("\n\n@getXmlValues >> Test Values in formatted_xml");
+			System.out.println("@getXmlValues >> formatted_xml.elementAt(0): "+formatted_xml.elementAt(0));
+			System.out.println("@getXmlValues >> ((Vector)formatted_xml.elementAt(0)).elementAt(0): "+((Vector)formatted_xml.elementAt(0)).elementAt(0));
+			System.out.println("\n@getXmlValues >> ((Vector)formatted_xml.elementAt(0)).elementAt(1): "+((Vector)formatted_xml.elementAt(0)).elementAt(1));
+			System.out.println("@getXmlValues >> ((Vector)formatted_xml.elementAt(1)).elementAt(0): "+((Vector)formatted_xml.elementAt(1)).elementAt(0));
+			System.out.println("@getXmlValues >> ((Vector)formatted_xml.elementAt(2)).elementAt(0): "+((Vector)formatted_xml.elementAt(2)).elementAt(0));
+			System.out.println("@getXmlValues >> ((Vector)formatted_xml.elementAt(2)).elementAt(1): "+((Vector)formatted_xml.elementAt(2)).elementAt(1));
+			System.out.println("@getXmlValues >> ((Vector)formatted_xml.elementAt(3)).elementAt(0): "+((Vector)formatted_xml.elementAt(3)).elementAt(0));
+			
+			System.err.println("\n@getXmlValues >> Sadly, at this stage, the values arn't sorted yet. \n\t\t\t\t\t\t\t\t\t  Need to find a good and effective way for that, first.");
+		};
+		
+		return formatted_xml;
+	};
+	/* checkForNumber(char c)
+	 * 
+	 * It simply checks, if a character is a number or not.
+	 * Return: bool
+	*/
+	public static bool checkForNumber(char c){
+		bool b = false;
+		System.out.println(c);
+		if(c=='0'||c=='1'||c=='2'||c=='3'||c=='4'||c=='5'||c=='6'||c=='7'||c=='8'||c=='9'||c=='.'){
+			return true;
+		}
+		return false;
+	}
+	
+	/* toFloat(String s)
+	 * 
+	 * It converts a string to a floating-point number.
+	 * Return: float
+	*/
+	public static float toFloat(String s){
+		int toFloatCount;
+		
+		String stringVal = s;
+		StringBuilder prePoint = new StringBuilder();
+		StringBuilder pastPoint = new StringBuilder();
+		int pastPointMulti = 1; 								// Integer.parseInt(n) will convert .004 to 4.
+		bool switchFloatingPoint = false;
+		
+		float finalFloat = 0.0f;
+		if(stringVal.length() > 7){
+			toFloatCount = 7;
+		}else{
+			toFloatCount = stringVal.length();
+		}
+		for(int i = 0; i <= toFloatCount-1; i++){
+
+			if(stringVal.charAt(i)=='.' || stringVal.charAt(i)==','){
+				switchFloatingPoint = true;
+				i++;
+			}
+			if(switchFloatingPoint){
+				pastPointMulti = pastPointMulti*10;
+				pastPoint.append(stringVal.charAt(i));
+			}else{
+				
+				prePoint.append(stringVal.charAt(i));
+			}
+			
+		}
+		float finalNumber;
+		if(stringVal.charAt(0)=='-'){
+			finalNumber = (((float)Integer.parseInt(prePoint.toString()) +(float)Integer.parseInt(pastPoint.toString()) / (float)pastPointMulti)) *-1;
+		}else{
+			finalNumber = ((float)Integer.parseInt(prePoint.toString()) +(float)Integer.parseInt(pastPoint.toString()) / (float)pastPointMulti);
+		}
+		return finalNumber;
+	}
+	
+	/* getXmlValues(String xmlStr)
+	 * 
+	 * This is the same method, but without debug-mode.
+	 * Return: object
+	*/
+	public static Vector getXmlValues(String xmlStr){ //String returnData bool debug
+		
+		Vector xmlTagOpen = new Vector(0);			// XML open Tag  ( <xml>  )
+		Vector xmlTagClose = new Vector(0);			// XML close Tag ( </xml> )
+		Vector xmlComPosVec = new Vector(0);		// char-count for commands between tags ( <xml>HelloWorld</xml> ) -> vector3f(x:6 y:0 z:15) from char[6] to char[15]
+		Vector xmlValueVec = new Vector(0);			// XML Value (inside brackets: <x>XML Value</x>)
+		Vector formatted_xml = new Vector(0);
+		
+		Vector3f xmlComPos = new Vector3f();
+		char[] xmlCharArray = xmlStr.toCharArray();
+		String tempTag;
+		bool stopAddingComs = false;
+		int whileMax = 400;							// Safty First! ... Not really needed, if you know how to XML. >> It will auto-break, if your XML tags are longer than this value.
+		int count = 0;
+		int countChar = 0;
+		
+		
+		//
+		// Find all XML-Tags and store them in a Vector.
+		// One Vector for Opened and one for Closed Tags.
+		//////
+		for(int i = 0;i<xmlCharArray.length;i++){
+			if(xmlCharArray[i]=='<' && xmlCharArray[i+1]!='/' && xmlCharArray[i+1]!='?'){
+				stopAddingComs = false;
+				countChar = i;
+				StringBuilder sb = new StringBuilder();
+				while(count<whileMax){
+					sb.append(xmlCharArray[countChar]);
+					if(xmlCharArray[countChar]=='>'){
+						if(!stopAddingComs){
+							xmlComPos.x=countChar+1;
+						};
+						break;
+					}else{
+						countChar++;
+						count++;
+					}
+				}
+				xmlTagOpen.addElement(sb.toString());
+				i = countChar;
+			}else if(xmlCharArray[i]=='<' && xmlCharArray[i+1]=='/'){
+				countChar = i;
+				StringBuilder sb = new StringBuilder();
+				while(count<whileMax){
+					sb.append(xmlCharArray[countChar]);
+					if(xmlCharArray[countChar]=='>'){
+						if(!stopAddingComs){
+							xmlComPos.z=countChar-(sb.toString().length());
+							xmlComPosVec.addElement(xmlComPos);
+							StringBuilder tsb = new StringBuilder(); 
+							Vector3f tv3f = new Vector3f();
+							tv3f = (Vector3f)xmlComPosVec.elementAt((xmlComPosVec.capacity()-1));
+							for(int j = (int)tv3f.x; j<=(int)tv3f.z; j++){
+								tsb.append(xmlCharArray[j]);
+							}
+								
+							// TODO: +Attribute >> find and process attributes in XML-Files
+							// TODO: +Numbers >> auto convert to INT, FLOAT, DOUBLE
+							// HERE!
+							/////////////////////////////////////////////////////////////////
+							xmlValueVec.addElement(tsb.toString());
+						};
+						break;
+					}else{
+						countChar++;
+						count++;
+					}
+				}
+				xmlTagClose.addElement(sb.toString());
+				i = countChar;
+				stopAddingComs=true;
+			}
+		}
+		
+		formatted_xml.addElement(xmlTagOpen);
+		formatted_xml.addElement(xmlComPosVec);
+		formatted_xml.addElement(xmlValueVec);
+		formatted_xml.addElement(xmlTagClose);
+
+		return formatted_xml;
+	};
+}
